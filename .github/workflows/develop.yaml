@@ -5,6 +5,10 @@ on:
     - cron:  '0 * * * *'
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,27 +21,49 @@ jobs:
     - name: Checkout qmk_firmware
       uses: actions/checkout@v2
       with:
-        ref: develop
-        repository: 'qmk/qmk_firmware'
+        ref: sn32_develop
+        repository: 'SonixQMK/qmk_firmware'
 
     - name: Install dependencies
       run: |
         python3 -m pip install -r requirements-dev.txt
         apt-get update && apt-get install -y rsync nodejs npm doxygen
-        npm install -g moxygen
+        touch $HOME/.bashrc
+        wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        source $HOME/.bashrc
+        nvm install 20
+        nvm use 20
+        corepack enable
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
 
     - name: Build docs
       run: |
+        source $HOME/.bashrc
+        nvm use 20
+        sed -i "/description: \"Documentation for QMK Firmware\",/a\        base: '/qmk_docs/'," "builddefs/docsgen/.vitepress/config.mts"
         qmk --verbose generate-docs
         rm .build/docs/CNAME
-        sed -i "s^basePath: '/'^basePath: '/qmk_docs_devel/'^" .build/docs/index.html
-
-    - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@4.1.5
+      
+    - name: Upload Artifact
+      uses: actions/upload-pages-artifact@v1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        branch: gh-pages
-        folder: .build/docs
-        clean: true
-        single-commit: true
-        git-config-email: hello@qmk.fm
+          path: ".build/docs"
+
+  deploy-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
