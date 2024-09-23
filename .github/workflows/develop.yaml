@@ -39,10 +39,15 @@ jobs:
       uses: actions/configure-pages@v4
 
     - name: Build docs
+      env:
+        CONFIG_FILE: "builddefs/docsgen/.vitepress/config.mts"
       run: |
         source $HOME/.bashrc
         nvm use 20
-        sed -i "/description: \"Documentation for QMK Firmware\",/a\        base: '/qmk_docs/'," "builddefs/docsgen/.vitepress/config.mts"
+        sed -i "/description: \"Documentation for QMK Firmware\",/a\        base: '/qmk_docs/'," "$CONFIG_FILE"
+        sed -i "s|github.com/qmk|github.com/SonixQMK|g" "$CONFIG_FILE"
+        sed -i 's|discord.gg/[A-Za-z0-9_-]*|discord.gg/gqHaeQYuxS|' "$CONFIG_FILE"
+        sed -i 's|QMK|SonixQMK|g' "$CONFIG_FILE"
         qmk --verbose generate-docs
         rm .build/docs/CNAME
       
