@@ -52,7 +52,7 @@ jobs:
         rm .build/docs/CNAME
       
     - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v1
+      uses: actions/upload-pages-artifact@v3
       with:
           path: ".build/docs"
 
